@@ -89,7 +89,7 @@ int main( int ac, char *av[] )
             filename = av[ i ];
 
     cout << "Starting...\n";
-    cout << "PKI-M Assembler/Simulator, Version 2.0\n";
+    cout << "PKI-M Assembler/Simulator, Version 2.0.1\n";
 
     // Create ram_image for use by simulator...  The old assembler
     // code refers to this as "memory" but the old simulator code

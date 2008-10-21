@@ -501,7 +501,7 @@ bool do_step( void )
     TWO_BYTE             R1, R2, R3;
     TWO_BYTE             &condition = R1; // Same variable via reference
     FOUR_BYTE            address;
-    FOUR_BYTE            short_const, long_const, temp, result;
+    FOUR_BYTE            short_const, long_const, temp, result, temp_r3;
     static unsigned long steps = 1;
     static bool          halted = false;
     bool                 temp_zero_flag, temp_carry_flag;
@@ -666,25 +666,26 @@ bool do_step( void )
         case SUB_OP: // SUB - checked
             if ( ( instruction & 0xf000 ) == 0x5000 )
                 // Form 2's complement of second operand
-                registers[ R3 ] = ( registers[ R3 ] ^ all_ones ) + 1;
+                temp_r3 = ( registers[ R3 ] ^ all_ones ) + 1;
+            else
+                temp_r3 = registers[ R3 ];
             a_neg = ( registers[ R2 ] & sign_bit ) != 0; // Set first sign
-            b_neg = ( registers[ R3 ] & sign_bit ) != 0; // Set second sign
-            result = registers[ R2 ] + registers[ R3 ];
+            b_neg = ( temp_r3 & sign_bit ) != 0;         // Set second sign
+            result = registers[ R2 ] + temp_r3;
             r_neg = ( result & sign_bit ) != 0;
-
             temp_zero_flag = ( result == 0 );
 
 #if 1   // You can use this if you have a G++ compiler that supports 64-bit int's
             EIGHT_BYTE carry_check;
             carry_check = (unsigned long long ) registers[ R2 ] + 
-              (unsigned long long ) registers[ R3 ];
+              (unsigned long long ) temp_r3;
             carry_check &= 0x100000000LL;
             temp_carry_flag = ( carry_check & 0x100000000LL ) != 0;
-#else   // No trickery, but a bit more complicated.
+#else   // No trickery, but a bit more complicated. NEED TO RE-TEST THIS.
             FOUR_BYTE carry_in = ( ( registers[ R2 ] & big_signed ) +
-                                   ( registers[ R3 ] & big_signed ) ) >> ( int_bits - 1 );
+                                   ( temp_r3 & big_signed ) ) >> ( int_bits - 1 );
             FOUR_BYTE msb_R2 = ( registers[ R2 ] & ~big_signed ) >> ( int_bits - 1 );
-            FOUR_BYTE msb_R3 = ( registers[ R3 ] & ~big_signed ) >> ( int_bits - 1 );
+            FOUR_BYTE msb_R3 = ( temp_r3 & ~big_signed ) >> ( int_bits - 1 );
             FOUR_BYTE carry_out = carry_in + msb_R2 + msb_R3;
             temp_carry_flag = ( carry_out & 0x02 );
 #endif
@@ -698,11 +699,6 @@ bool do_step( void )
 
             if ( R1 )
                 registers[ R1 ] = result & all_ones;
-            if ( ( ( instruction & INSTRUCTION_MASK ) == SUB_OP ) &&
-                 ( R3 != R1                                     ) )
-                // Put original register back as it was,
-                // but be careful if it is also the destination.
-                registers[ R3 ] = ( registers[ R3 ] ^ all_ones ) + 1;
             break;
 
         case AND_OP: // AND 
