@@ -1,0 +1,7 @@
+*.o
+*grammar.tab.h
+*lexscan.cpp
+pki_asm.cpp
+pki_sim_grammar.cpp
+pki_run
+
